@@ -12,6 +12,13 @@ public class UserController {
     @Autowired
     private UserService userService;
 
+    @RequestMapping("/getCachedUserInfo")
+    @ResponseBody
+    public User getCachedUserInfo(){
+        User user = userService.getCachedUserInfo();
+        return user;
+    }
+
     @RequestMapping("/getUserInfo")
     @ResponseBody
     public User getUserInfo() {
