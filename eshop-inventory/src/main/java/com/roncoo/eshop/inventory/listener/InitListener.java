@@ -1,4 +1,4 @@
-package com.roncoo.eshop.inventory;
+package com.roncoo.eshop.inventory.listener;
 
 import com.roncoo.eshop.inventory.thread.RequestProcessorThreadPool;
 
@@ -11,6 +11,8 @@ import javax.servlet.ServletContextListener;
  *
  */
 public class InitListener implements ServletContextListener {
+
+
     @Override
     public void contextInitialized(ServletContextEvent sce) {
         // 初始化工作线程池和内存队列

@@ -18,7 +18,7 @@ public class RequestProcessorThread implements Callable<Boolean> {
      */
     private ArrayBlockingQueue<Request> queue;
 
-    public RequestProcessorThread(ArrayBlockingQueue<Request> queues) {
+    public RequestProcessorThread(ArrayBlockingQueue<Request> queue) {
         this.queue = queue;
     }
 

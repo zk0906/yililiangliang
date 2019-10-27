@@ -1,5 +1,6 @@
 package com.roncoo.eshop.inventory;
 
+import com.roncoo.eshop.inventory.listener.InitListener;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.tomcat.jdbc.pool.DataSource;
 import org.mybatis.spring.SqlSessionFactoryBean;
@@ -64,9 +65,10 @@ public class Application {
     }
 
     /**
-     * 注册监听器
+     * 注册监听器;将系统的初始化完成,如线程池的初始化。
      * @return
      */
+    @Bean
     public ServletListenerRegistrationBean servletListenerRegistrationBean(){
         ServletListenerRegistrationBean servletListenerRegistrationBean = new ServletListenerRegistrationBean();
         servletListenerRegistrationBean.setListener(new InitListener());

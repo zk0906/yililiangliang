@@ -1,11 +1,17 @@
 package com.roncoo.eshop.inventory.controller;
 
-import com.roncoo.eshop.inventory.model.User;
-import com.roncoo.eshop.inventory.service.UserService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.roncoo.eshop.inventory.model.ProductInventory;
+import com.roncoo.eshop.inventory.request.ProductInventoryCacheRefreshRequest;
+import com.roncoo.eshop.inventory.request.ProductInventoryDBUpdateRequest;
+import com.roncoo.eshop.inventory.request.Request;
+import com.roncoo.eshop.inventory.service.ProductInventoryService;
+import com.roncoo.eshop.inventory.service.RequestAsyncProcessService;
+import com.roncoo.eshop.inventory.vo.Response;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
+
+import javax.annotation.Resource;
 /**
  * 商品库存Controller
  * @author Administrator
@@ -37,26 +43,103 @@ import org.springframework.web.bind.annotation.ResponseBody;
  */
 @Controller
 public class ProductInventoryController {
-    @Autowired
-    private UserService userService;
 
-    @RequestMapping("/getCachedUserInfo")
+    @Resource
+    private RequestAsyncProcessService requestAsyncProcessService;
+
+    @Resource
+    private ProductInventoryService productInventoryService;
+
+    /**
+     * 更新商品库存
+     */
+    @RequestMapping("/updateProductInventory")
     @ResponseBody
-    public User getCachedUserInfo(){
-        User user = userService.getCachedUserInfo();
-        return user;
+    public Response updateProductInventory(ProductInventory productInventory) {
+        // 为了简单起见，我们就不用log4j那种日志框架去打印日志了
+        // 其实log4j也很简单，实际企业中都是用log4j去打印日志的，自己百度一下
+        System.out.println("===========日志===========: 接收到更新商品库存的请求，商品id=" + productInventory.getProductId() + ", 商品库存数量=" + productInventory.getInventoryCnt());
+
+        Response response = null;
+        try {
+            Request request = new ProductInventoryDBUpdateRequest(productInventory, productInventoryService);
+            requestAsyncProcessService.process(request);
+            response = new Response(Response.SUCCESS);
+        } catch (Exception e) {
+            e.printStackTrace();
+            response = new Response(Response.FAILURE);
+        }
+        return response;
     }
 
-    @RequestMapping("/getUserInfo")
+
+    /**
+     * 获取商品库存
+     */
+    @RequestMapping("/getProductInventory")
     @ResponseBody
-    public User getUserInfo() {
-        User user = userService.findUserInfo();
-        return user;
+    public ProductInventory getProductInventory(Integer productId) {
+        System.out.println("===========日志===========: 接收到一个商品库存的读请求，商品id=" + productId);
+
+        ProductInventory productInventory = null;
+        try {
+            //!!!!!这是少见的做法（异步），controller--->队列--->线程池自己执行
+            Request request = new ProductInventoryCacheRefreshRequest(productId,productInventoryService,true);
+            requestAsyncProcessService.process(request);
+
+            // 将请求扔给service异步去处理以后，就需要while(true)一会儿，在这里hang住
+            // 去尝试等待前面有商品库存更新的操作，同时缓存刷新的操作，将最新的数据刷新到缓存中
+            long startTime = System.currentTimeMillis();
+            long endTime = 0L;
+            long waitTime = 0L;
+
+            //在规定等待时间内，从缓存中读数据
+            while(true){
+//                if(waitTime > 25000){
+//                    break;
+//                }
+
+                // 一般公司里面，面向用户的读请求控制在200ms就可以了
+                if(waitTime > 200) {
+                    break;
+                }
+
+                // 尝试去redis中读取一次商品库存的缓存数据
+                productInventory = productInventoryService.getProductInventoryCache(productId);
+
+                // 如果读取到了结果，那么就返回
+                if(productInventory != null){
+                    System.out.println("===========日志===========: 在200ms内读取到了redis中的库存缓存，商品id=" + productInventory.getProductId() + ", 商品库存数量=" + productInventory.getInventoryCnt());
+                    return productInventory;
+                }
+                // 如果没有读取到结果，那么等待一段时间
+                else {
+                    Thread.sleep(20);
+                    endTime = System.currentTimeMillis();
+                    waitTime = endTime - startTime;
+                }
+            }
+
+            //
+            // 超过规定的时间，则直接尝试从数据库中读取数据,这是最常见的做法，controller--->service--->dao（数据库/缓存），同步
+            productInventory = productInventoryService.findProductInventory(productId);
+            if(productInventory != null){
+                // 将缓存刷新一下
+                // 这个过程，实际上是一个读操作的过程，但是没有放在队列中串行去处理，还是有数据不一致的问题
+                request = new ProductInventoryCacheRefreshRequest(
+                        productId, productInventoryService, true);
+                request.process();
+
+                // 假如说，执行完了一个读请求之后，假设数据已经刷新到redis中了
+                // 但是后面可能redis中的数据会因为内存满了，被自动清理掉
+                // 如果说数据从redis中被自动清理掉了以后
+                // 然后后面又来一个读请求，此时如果进来，发现标志位是false，就不会去执行这个刷新的操作了
+                // 所以在执行完这个读请求之后，实际上这个标志位是停留在false的
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return  new ProductInventory(productId,-1L);
     }
 
-    @RequestMapping("/index")
-    @ResponseBody
-    public String index() {
-        return "Hello World";
-    }
 }

@@ -1,9 +1,8 @@
 package com.roncoo.eshop.inventory.thread;
 
 import com.roncoo.eshop.inventory.request.Request;
+import com.roncoo.eshop.inventory.request.RequestQueue;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -15,16 +14,21 @@ import java.util.concurrent.Executors;
  */
 public class RequestProcessorThreadPool {
 
-    private List<ArrayBlockingQueue<Request>> queues = new ArrayList<ArrayBlockingQueue<Request>>();
-
+    // 在实际项目中，你设置线程池大小是多少，每个线程监控的那个内存队列的大小是多少
+    // 都可以做到一个外部的配置文件中
+    // 我们这了就给简化了，直接写死了，好吧
     /**
      * 线程池
      */
     private ExecutorService threadPool = Executors.newFixedThreadPool(10);
+
     public RequestProcessorThreadPool() {
+        RequestQueue requestQueue = RequestQueue.getInstance();
+
         for(int i = 0; i < 10; i++){
             ArrayBlockingQueue<Request> queue = new ArrayBlockingQueue<Request>(100);
-            queues.add(queue);
+            requestQueue.addQueue(queue);
+            threadPool.submit(new RequestProcessorThread(queue));
         }
 
     }
@@ -61,7 +65,10 @@ public class RequestProcessorThreadPool {
         return Singleton.getInstance();
     }
 
-    public static void init(){
-
+    /**
+     * 初始化的便捷方法
+     */
+    public static RequestProcessorThreadPool init(){
+        return getInstance();
     }
 }
