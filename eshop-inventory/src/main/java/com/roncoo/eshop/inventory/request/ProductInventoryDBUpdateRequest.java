@@ -66,11 +66,14 @@ public class ProductInventoryDBUpdateRequest implements Request{
         //删除缓存
         this.productInventoryService.removeProductInventoryCache(productInventory);
         // 为了模拟演示先删除了redis中的缓存，然后还没更新数据库的时候，读请求过来了，这里可以人工sleep 5秒一下
+        int sleepTime = 10;
+        System.out.println("===========日志===========: 休眠 "+sleepTime+"秒一下" );
         try{
-            Thread.sleep(5000);
+            Thread.sleep(sleepTime*1000);
         }catch (InterruptedException e){
             e.printStackTrace();
         }
+        System.out.println("===========日志===========: 休眠结束" );
         // 修改数据库中的库存
         this.productInventoryService.updateProductInventory(productInventory);
     }
@@ -84,8 +87,9 @@ public class ProductInventoryDBUpdateRequest implements Request{
         return productInventory.getProductId();
     }
 
-    @Override
-    public boolean isForceRefresh() {
-        return false;
-    }
+//    @Override
+//    public boolean isForceRefresh() {
+//        return false;
+//    }
+
 }

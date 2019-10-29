@@ -27,11 +27,12 @@ public class RequestProcessorThread implements Callable<Boolean> {
         try{
             while (true){
                 // ArrayBlockingQueue
-                // Blocking就是说明，如果队列满了，或者是空的，那么都会在执行操作的时候，阻塞住
+                // Blocking就是说明，如果队列满了，或者是空的，那么都会在执行操作的时候，阻塞住，实现了读写的串行化
                 Request request = queue.take();
-                System.out.println("===========日志===========: 工作线程处理请求，商品id=" + request.getProductId());
+                System.out.println("===========日志===========: 开始工作线程处理请求，商品id=" + request.getProductId());
                 // 执行这个request操作
                 request.process();
+                System.out.println("===========日志===========: 结束工作线程处理请求，商品id=" + request.getProductId());
             }
         }catch (Exception e){
             e.printStackTrace();
