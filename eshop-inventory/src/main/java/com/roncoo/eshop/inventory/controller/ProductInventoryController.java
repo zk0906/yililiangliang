@@ -84,7 +84,7 @@ public class ProductInventoryController {
         ProductInventory productInventory = null;
         try {
             //!!!!!这是少见的做法（异步），controller--->队列--->线程池自己执行
-            Request request = new ProductInventoryCacheRefreshRequest(productId,productInventoryService,true);
+            Request request = new ProductInventoryCacheRefreshRequest(productId,productInventoryService,false);
             requestAsyncProcessService.process(request);
 
             // 将请求扔给service异步去处理以后，就需要while(true)一会儿，在这里hang住
@@ -95,6 +95,8 @@ public class ProductInventoryController {
 
             //在规定等待时间内，从缓存中读数据
             while(true){
+                System.out.println("===========日志===========: waitTime=" +waitTime);
+
 //                if(waitTime > 25000){
 //                    break;
 //                }
@@ -111,12 +113,11 @@ public class ProductInventoryController {
                 if(productInventory != null){
                     System.out.println("===========日志===========: 在200ms内读取到了redis中的库存缓存，商品id=" + productInventory.getProductId() + ", 商品库存数量=" + productInventory.getInventoryCnt());
                     return productInventory;
-                }
-                // 如果没有读取到结果，那么等待一段时间
-                else {
+                }else {// 如果没有读取到结果，那么等待一段时间
                     Thread.sleep(20);
                     endTime = System.currentTimeMillis();
                     waitTime = endTime - startTime;
+
                 }
             }
 
@@ -127,14 +128,17 @@ public class ProductInventoryController {
                 // 将缓存刷新一下
                 // 这个过程，实际上是一个读操作的过程，但是没有放在队列中串行去处理，还是有数据不一致的问题
                 request = new ProductInventoryCacheRefreshRequest(
-                        productId, productInventoryService, true);
-                request.process();
+                        productId, productInventoryService,true);
+                requestAsyncProcessService.process(request);
 
-                // 假如说，执行完了一个读请求之后，假设数据已经刷新到redis中了
-                // 但是后面可能redis中的数据会因为内存满了，被自动清理掉
-                // 如果说数据从redis中被自动清理掉了以后
-                // 然后后面又来一个读请求，此时如果进来，发现标志位是false，就不会去执行这个刷新的操作了
-                // 所以在执行完这个读请求之后，实际上这个标志位是停留在false的
+                // 代码会运行到这里，只有三种情况：
+                // 1、就是说，上一次也是读请求，数据刷入了redis，但是redis LRU算法给清理掉了，标志位还是false
+                // 所以此时下一个读请求是从缓存中拿不到数据的，再放一个读Request进队列，让数据去刷新一下
+                // 2、可能在200ms内，就是读请求在队列中一直积压着，没有等待到它执行（在实际生产环境中，基本是比较坑了）
+                // 所以就直接查一次库，然后给队列里塞进去一个刷新缓存的请求
+                // 3、数据库里本身就没有，缓存穿透，穿透redis，请求到达mysql库
+
+                return productInventory;
             }
         }catch (Exception e){
             e.printStackTrace();

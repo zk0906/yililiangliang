@@ -19,16 +19,15 @@ public class ProductInventoryCacheRefreshRequest implements Request{
      * 商品库存Service
      */
     private ProductInventoryService productInventoryService;
-
     /**
      * 是否强制刷新缓存
      */
-    private boolean forceRefresh;
+//    private boolean forceRefresh;
 
-    public ProductInventoryCacheRefreshRequest(Integer productId, ProductInventoryService productInventoryService,boolean forceRefresh) {
+    public ProductInventoryCacheRefreshRequest(Integer productId,ProductInventoryService productInventoryService,boolean forceRefresh) {
         this.productId = productId;
         this.productInventoryService = productInventoryService;
-        this.forceRefresh = forceRefresh;
+//        this.forceRefresh = forceRefresh;
     }
 
     @Override
@@ -45,7 +44,7 @@ public class ProductInventoryCacheRefreshRequest implements Request{
         return productId;
     }
 
-    public boolean isForceRefresh() {
-        return forceRefresh;
-    }
+//    public boolean isForceRefresh() {
+//        return forceRefresh;
+//    }
 }
