@@ -1,5 +1,6 @@
 package com.roncoo.eshop.cache.kafka;
 
+import com.alibaba.fastjson.JSONObject;
 import kafka.consumer.ConsumerIterator;
 import kafka.consumer.KafkaStream;
 
@@ -24,8 +25,37 @@ public class KafkaMessageProcessor implements Runnable{
         while (it.hasNext()) {
             String message = new String(it.next().message());
 
+            // 首先将message转换成json对象
+            JSONObject messageJSONObject = JSONObject.parseObject(message);
 
+            // 从这里提取出消息对应的服务的标识
+            String serviceId = messageJSONObject.getString("serviceId");
+
+            // 如果是商品信息服务
+            if("productInfoService".equals(serviceId)) {
+                processProductInfoChangeMessage(messageJSONObject);
+            } else if("shopInfoService".equals(serviceId)) {
+                processShopInfoChangeMessage(messageJSONObject);
+            }
 
         }
+    }
+
+    /**
+     * 处理商品信息变更的消息
+     * @param messageJSONObject
+     */
+    private void processProductInfoChangeMessage(JSONObject messageJSONObject) {
+
+    }
+
+
+    /**
+     * 处理店铺信息变更的消息
+     * @param messageJSONObject
+     */
+    private void processShopInfoChangeMessage(JSONObject messageJSONObject) {
+
+
     }
 }

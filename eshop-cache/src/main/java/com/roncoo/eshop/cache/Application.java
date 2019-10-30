@@ -19,6 +19,27 @@ import redis.clients.jedis.JedisCluster;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * 2、编写业务逻辑
+ （1）两种服务会发送来数据变更消息：商品信息服务，商品店铺信息服务，每个消息都包含服务名以及商品id
+ （2）接收到消息之后，根据商品id到对应的服务拉取数据，这一步，我们采取简化的模拟方式，就是在代码里面写死，会获取到什么数据，不去实际再写其他的服务去调用了
+ （3）商品信息：id，名称，价格，图片列表，商品规格，售后信息，颜色，尺寸
+ （4）商品店铺信息：其他维度，用这个维度模拟出来缓存数据维度化拆分，id，店铺名称，店铺等级，店铺好评率
+ （5）分别拉取到了数据之后，将数据组织成json串，然后分别存储到ehcache中，和redis缓存中
+
+ 3、测试业务逻辑
+ （1）创建一个kafka topic
+ （2）在命令行启动一个kafka producer
+ （3）启动系统，消费者开始监听kafka topic
+ C:\Windows\System32\drivers\etc\hosts
+ （4）在producer中，分别发送两条消息，一个是商品信息服务的消息，一个是商品店铺信息服务的消息
+ （5）能否接收到两条消息，并模拟拉取到两条数据，同时将数据写入ehcache中，并写入redis缓存中
+ （6）ehcache通过打印日志方式来观察，redis通过手工连接上去来查询
+
+
+
+ */
+
 @SpringBootApplication
 @MapperScan("com.roncoo.eshop.cache.mapper")
 public class Application {
