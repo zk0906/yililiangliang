@@ -24,8 +24,10 @@ public class RequestProcessorThread implements Callable<Boolean> {
 
     @Override
     public Boolean call() throws Exception {
+        System.out.println("===========日志===========: 工作线程处理请求 call方法");
         try{
             while (true){
+                System.out.println("===========日志===========: 工作线程处理请求 call方法   into");
                 // ArrayBlockingQueue
                 // Blocking就是说明，如果队列满了，或者是空的，那么都会在执行操作的时候，阻塞住
                 Request request = queue.take();
