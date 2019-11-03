@@ -21,7 +21,7 @@ public class KafkaConsumer implements Runnable {
     private final  String topic;
 
     public KafkaConsumer(String topic) {
-        this.consumerConnector = Consumer.createJavaConsumerConnector(createConsumerConfig("139.9.105.242:2181,49.234.235.150:2181,115.28.211.17:2181","eshop-cache-group"));
+        this.consumerConnector = Consumer.createJavaConsumerConnector(createConsumerConfig());
         this.topic = topic;
     }
 
@@ -29,11 +29,11 @@ public class KafkaConsumer implements Runnable {
      * 创建kafka cosumer config
      * @return
      */
-    private static ConsumerConfig  createConsumerConfig(String a_zookeeper, String a_groupId) {
+    private static ConsumerConfig  createConsumerConfig() {
         Properties props = new Properties();
-        props.put("zookeeper.connect",a_zookeeper);
-        props.put("group.id",a_groupId);
-        props.put("zookeeper.session.timeout.ms", "400");
+        props.put("zookeeper.connect","139.9.105.242:2181,49.234.235.150:2181,115.28.211.17:2181");
+        props.put("group.id","eshop-cache-group");
+        props.put("zookeeper.session.timeout.ms", "40000");
         props.put("zookeeper.sync.time.ms", "200");
         props.put("auto.commit.interval.ms", "1000");
         return new ConsumerConfig(props);
