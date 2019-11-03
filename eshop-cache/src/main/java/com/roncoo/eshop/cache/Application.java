@@ -78,10 +78,12 @@ public class Application {
     @Bean
     public JedisCluster JedisClusterFactory() {
         Set<HostAndPort> jedisClusterNodes = new HashSet<HostAndPort>();
-        jedisClusterNodes.add(new HostAndPort("49.234.235.150",7001));
         jedisClusterNodes.add(new HostAndPort("49.234.235.150",7002));
-        jedisClusterNodes.add(new HostAndPort("49.234.235.150",7003));
-        JedisCluster jedisCluster = new JedisCluster(jedisClusterNodes);
+//        jedisClusterNodes.add(new HostAndPort("49.234.235.150",7002));
+//        jedisClusterNodes.add(new HostAndPort("49.234.235.150",7003));
+//        JedisCluster jedisCluster = new JedisCluster(jedisClusterNodes);
+        //jedis超时重试机制
+        JedisCluster jedisCluster = new JedisCluster(jedisClusterNodes,600000,50);
         return jedisCluster;
     }
 

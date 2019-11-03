@@ -32,6 +32,20 @@ public interface CacheService {
     public ProductInfo getProductInfoFromLocalCache(Long productId);
 
     /**
+     * 从redis缓存中获取商品信息
+     * @param productId
+     * @return
+     */
+    public ProductInfo getProductInfoFromRedisCache(Long productId);
+
+    /**
+     * 从redis缓存中获取店铺信息
+     * @param productId
+     * @return
+     */
+    public ShopInfo getShopInfoFromRedisCache(Long shopId);
+
+    /**
      * 将店铺信息保存到本地的ehcache缓存中
      * @param productInfo
      */

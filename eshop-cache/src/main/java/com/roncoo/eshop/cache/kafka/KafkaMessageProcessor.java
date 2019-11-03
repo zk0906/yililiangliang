@@ -71,6 +71,10 @@ public class KafkaMessageProcessor implements Runnable{
 
     }
 
+    public static void main(String[] args) {
+
+    }
+
 
     /**
      * 处理店铺信息变更的消息
