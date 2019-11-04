@@ -1,6 +1,7 @@
 package com.roncoo.eshop.cache.listener;
 
 import com.roncoo.eshop.cache.kafka.KafkaConsumer;
+import com.roncoo.eshop.cache.rebuild.RebuildCacheThread;
 import com.roncoo.eshop.cache.spring.SpringContext;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.context.support.WebApplicationContextUtils;
@@ -22,6 +23,8 @@ public class InitListener implements ServletContextListener {
         SpringContext.setApplicationContext(context);
         // kafka的初始化
         new Thread(new KafkaConsumer("cache-message")).start();
+        //缓存重建队列处理线程的启动
+        new Thread((new RebuildCacheThread())).start();
     }
 
     @Override
