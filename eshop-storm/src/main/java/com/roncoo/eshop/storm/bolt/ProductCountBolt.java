@@ -25,6 +25,10 @@ public class ProductCountBolt extends BaseRichBolt {
     @Override
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         new Thread(new ProductCountThread()).start();
+        // 1、将自己的taskid写入一个zookeeper node中，形成taskid的列表
+        // 2、然后每次都将自己的热门商品列表，写入自己的taskid对应的zookeeper节点
+        // 3、然后这样的话，并行的预热程序才能从第一步中知道，有哪些taskid
+        // 4、然后并行预热程序根据每个taskid去获取一个锁，然后再从对应的znode中拿到热门商品列表
 
     }
 
@@ -40,6 +44,7 @@ public class ProductCountBolt extends BaseRichBolt {
         }
         count++;
 
+        //某个产品，被请求了多少次，构成下一波LRU数据集合的数据来源
         productCountMap.put(productId,count);
     }
 
@@ -48,16 +53,22 @@ public class ProductCountBolt extends BaseRichBolt {
 
     }
 
+    /**
+     * 使用LRU算法，生成热点数据集合
+     */
     private class ProductCountThread implements Runnable {
 
         @Override
         public void run() {
+            //本次最终目标是：定时从productCountMap集合中，算出一个排名前n的目标集合topnProductList
             List<Map.Entry<Long,Long>> topnProductList = new ArrayList<Map.Entry<Long, Long>>();
             while(true){
                 topnProductList.clear();
 
                 int topn = 3;
                 for(Map.Entry<Long,Long> productCountEntry :productCountMap.entrySet()){
+                    //目标集合为空时，先放一批数据进去
+                    //然后，非空时，将每一个productCountMap中的数据（productCountEntry）与topnProductList的数据计算，剔除不合格的
                     if(topnProductList.size() == 0){
                         topnProductList.add(productCountEntry);
                     }else {
@@ -71,7 +82,7 @@ public class ProductCountBolt extends BaseRichBolt {
                             if(productCountEntry.getValue() > topnProductCountEntry.getValue()) {
                                 int lastIndex = topnProductList.size() < topn ? topnProductList.size() - 1 : topn - 2;
                                 for(int j = lastIndex; j >= i; j--) {
-                                    topnProductList.set(j + 1, topnProductList.get(j));
+                                    topnProductList.set(j + 1, topnProductList.get(j));//原先的那个top该索引后的所有数据都往后挪一位
                                 }
                                 topnProductList.set(i, productCountEntry);
                                 bigger = true;
