@@ -1,11 +1,14 @@
 package com.roncoo.eshop.storm.bolt;
 
+import com.alibaba.fastjson.JSONArray;
+import com.roncoo.eshop.storm.zk.ZookeeperSession;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.topology.base.BaseRichBolt;
 import org.apache.storm.trident.util.LRUMap;
 import org.apache.storm.tuple.Tuple;
+import org.apache.storm.utils.Utils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,19 +23,42 @@ public class ProductCountBolt extends BaseRichBolt {
     private static final long serialVersionUID = 1L;
 
     private LRUMap<Long,Long> productCountMap = new LRUMap<Long,Long>(1000);
+    private ZookeeperSession zkSession;
+    private int taskId;
 
 
     @Override
-    public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
+    public void prepare(Map map, TopologyContext context, OutputCollector outputCollector) {
+        this.zkSession = ZookeeperSession.getInstance();
+        this.taskId = context.getThisTaskId();
+
         new Thread(new ProductCountThread()).start();
         // 1、将自己的taskid写入一个zookeeper node中，形成taskid的列表
         // 2、然后每次都将自己的热门商品列表，写入自己的taskid对应的zookeeper节点
         // 3、然后这样的话，并行的预热程序才能从第一步中知道，有哪些taskid
         // 4、然后并行预热程序根据每个taskid去获取一个锁，然后再从对应的znode中拿到热门商品列表
-
+        initTaskId(context.getThisTaskId());
     }
 
+    private void initTaskId(int taskId) {
+        // ProductCountBolt所有的task启动的时候， 都会将自己的taskid写到同一个node的值中
+        // 格式就是逗号分隔，拼接成一个列表
+        // 111,211,355
 
+        //抢分布锁
+        zkSession.acquireDistributedLock();
+
+        //具体操作
+        String taskIdList =  zkSession.getNodeData();
+        if (!"".equals(taskIdList)){
+            taskIdList += "," +taskId;
+        }else {
+            taskIdList += taskId;
+        }
+        zkSession.setNodeData("/taskid-list", taskIdList);
+        zkSession.releaseDistributedLock();
+
+    }
 
 
     @Override
@@ -66,6 +92,11 @@ public class ProductCountBolt extends BaseRichBolt {
                 topnProductList.clear();
 
                 int topn = 3;
+
+                if(productCountMap.size() == 0){
+                    Utils.sleep(100);
+                    continue;
+                }
                 for(Map.Entry<Long,Long> productCountEntry :productCountMap.entrySet()){
                     //目标集合为空时，先放一批数据进去
                     //然后，非空时，将每一个productCountMap中的数据（productCountEntry）与topnProductList的数据计算，剔除不合格的
@@ -97,6 +128,10 @@ public class ProductCountBolt extends BaseRichBolt {
                         }
                     }
                 }
+                // 获取到一个topn list
+                String topnProductListJSON = JSONArray.toJSONString(topnProductList);
+                zkSession.setNodeData("/task-hot-product-list-" + taskId,topnProductListJSON);
+
             }
         }
     }
