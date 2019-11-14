@@ -58,7 +58,7 @@ public class Application {
     public JedisCluster JedisClusterFactory() {
         Set<HostAndPort> jedisClusterNodes = new HashSet<HostAndPort>();
 //        jedisClusterNodes.add(new HostAndPort("49.234.235.150",7001));
-        jedisClusterNodes.add(new HostAndPort("49.234.235.150",7002));
+        jedisClusterNodes.add(new HostAndPort("49.234.235.150",6379));
 //        jedisClusterNodes.add(new HostAndPort("49.234.235.150",7003));
         JedisCluster jedisCluster = new JedisCluster(jedisClusterNodes);
         //jedis超时重试机制
