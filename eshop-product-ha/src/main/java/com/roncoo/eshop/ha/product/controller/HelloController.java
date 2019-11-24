@@ -1,4 +1,4 @@
-package com.roncoo.eshop.cache.ha.controller;
+package com.roncoo.eshop.ha.product.controller;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
