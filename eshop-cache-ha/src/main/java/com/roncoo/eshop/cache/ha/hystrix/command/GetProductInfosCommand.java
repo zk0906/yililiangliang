@@ -26,13 +26,17 @@ public class GetProductInfosCommand extends HystrixObservableCommand<ProductInfo
     protected Observable<ProductInfo> construct() {
         return Observable.create(new Observable.OnSubscribe<ProductInfo>(){
             public void call(Subscriber<? super ProductInfo> observer){
-                for(String productId : productIds){
-                    String url = "http://127.0.0.1:8082/getProductInfo?productId=" + productId;
-                    String response = HttpClientUtils.sendGetRequest(url);
-                    ProductInfo productInfo = JSONObject.parseObject(response,ProductInfo.class);
-                    observer.onNext(productInfo);
+                try{
+                    for(String productId : productIds){
+                        String url = "http://127.0.0.1:8082/getProductInfo?productId=" + productId;
+                        String response = HttpClientUtils.sendGetRequest(url);
+                        ProductInfo productInfo = JSONObject.parseObject(response,ProductInfo.class);
+                        observer.onNext(productInfo);
+                    }
+                    observer.onCompleted();
+                }catch (Exception e){
+                    observer.onError(e);
                 }
-                observer.onCompleted();
             }
 
         }).subscribeOn(Schedulers.io());
